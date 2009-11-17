@@ -75,7 +75,7 @@ class LazyEnumerable
     self.singleton_class.class_eval do
       def each(&output_block)
         @enum.each do |e| 
-          e.flatten.each{|e2| output_block[e2]} 
+          [e].flatten.each{|e2| output_block[e2]} 
         end
       end
     end

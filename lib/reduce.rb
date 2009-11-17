@@ -12,7 +12,7 @@ module Enumerable
   # Reduce records containing in enum. 
   # Generate new_enum in no argument specified.
   # Place reduced records in output (using '<<' operator) if output is specified.
-  # Oupput block (lambda) or stream can be used as argument for this method. 
+  # Output block (lambda) or stream can be used as argument for this method. 
   def reduce(output_block=nil,&reduce_block)
     output_block ||= []
     last_record = nil
@@ -68,8 +68,6 @@ LazyEnumerable.class_eval do
   # Specified block is block for injecting values of records with same key.
   # See Enumerable#reduce
   def reduce!(&reduce_block)
-    @reduce_count ||= 0
-    @reduce_count += 1
     @enum = self.clone
     @reduce_block = reduce_block
     self.singleton_class.class_eval do
@@ -101,7 +99,7 @@ if $0 == __FILE__
     
       assert_equal(
         @r1_correct,
-        @r1.sort.reduce{|a,b| (a||=0)+b}.to_a
+        @r1.sort.reduce{|a,b| (a||=0)+b}
        )
     
       assert_equal(

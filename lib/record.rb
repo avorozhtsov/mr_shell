@@ -62,3 +62,8 @@ class String
   end
 end
 
+Enumerable.module_eval do
+  def put_records
+    each{|e| puts e.to_line}
+  end
+end

@@ -16,7 +16,7 @@ end
 
 class Proc
   # This alias make it possible use blocks as virtual input streams or arrays. 
-  alias :<< :[]
+  alias :<< :call
 end
 
 class Symbol

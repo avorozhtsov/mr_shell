@@ -1,7 +1,7 @@
 $:.unshift File.dirname(__FILE__)
 require 'core_ext'
 require 'lazy_enumerable'
-require 'record'
+require 'line_record'
 
 #:include: ../README
 module Enumerable

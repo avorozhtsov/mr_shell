@@ -2,7 +2,7 @@ $:.unshift File.dirname(__FILE__)
 
 require 'core_ext'
 
-module Record
+module LineRecord
 
   class <<self
     attr_accessor :field_separator
@@ -11,28 +11,28 @@ module Record
       @field_separator ||= "\t"
     end
   
-    def load_record_yaml(line)
+    def load_yaml(line)
       line = (field_separartor + line)
       line.gsub!(field_separartor, "- ")
       YAML.load(line) rescue line.split(field_separartor)
     end
     
-    def dump_record_yaml(record)
+    def dump_yaml(record)
       a = record.flatten.to_yaml
       a.gsub!(" -", field_separator)
       a
     end
     
-    def load_record_simple(line)
+    def load_simple(line)
       line.split(field_separator)
     end
     
-    def dump_record_simple(line)
+    def dump_simple(line)
       line.join(field_separator)
     end
     
-    alias load_record load_record_simple
-    alias dump_record dump_record_simple
+    alias load load_simple
+    alias dump dump_simple
     
   end
 end
@@ -48,7 +48,7 @@ class Array
   end
   
   def to_line
-    Record.dump_record(self)
+    LineRecord.dump(self)
   end
   
   def put_record
@@ -58,7 +58,7 @@ end
 
 class String
   def to_record
-    Record.load_record(self)
+    LineRecord.load(self)
   end
 end
 

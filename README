@@ -52,18 +52,20 @@ Method String#to_record is <tt>spit("\t")</tt>.
 There are shortcuts: 
 * <tt>records</tt> for <tt>STDIN.to_lazy.map(&:to_record)</tt>
 * <tt>r.put_record</tt> for <tt>puts r.to_line</tt>
+* <tt>enum.put_records</tt> for <tt>enum.each{|r| puts r.to_line}</tt>
 
-  cat records.txt | sort | \
+Example:
+  cat records.txt | \
   ruby -r reduce -e 'records.each{|p,f| p.split.each{|w| puts [w,f].to_line}}' | \ 
   sort | \ 
-  ruby -r reduce -e 'records.reduce{|a,b| (a||0) + b.to_i}.each(&:put_record)'
+  ruby -r reduce -e 'records.reduce{|a,b| (a||0) + b.to_i}.put_records'
 
 One can use pipe operator +|+, defined for LazyEnumerable
 and put +sort+ command line inside ruby code:
 
   cat records.txt | ruby -r reduce -e \ 
   'records.map_out{|o,r| r[0].split.each{|w| o << [w,r[1]]}}.|("sort"). \ 
-    reduce{|a,b| (a||0) + b.to_i}}).each(&:put_record)'
+    reduce{|a,b| (a||0) + b.to_i}}).put_records'
 
-Iterator +map_out+ sends to block output container.
+Iterator +map_out+ sends to block output container as first argument.
 

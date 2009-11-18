@@ -133,21 +133,7 @@ class LazyEnumerable
     @cmd = cmd
     self.singleton_class.class_eval do
       def each(&output_block)
-        IO.popen(@cmd, 'r+') do |pipe|
-          Thread.new {
-            @enum.each{|e| pipe.puts(e.to_line)}
-            pipe.close_write
-          }
-          if @map_block
-            pipe.each do |line|
-              output_block[@map_block[line]]
-            end
-          else
-            pipe.each do |line|
-              output_block[line.to_record]
-            end
-          end
-        end
+        @enum.pipe(@cmd, output_block, &@map_block)
         self
       end
     end
@@ -160,6 +146,41 @@ end
 Enumerable.module_eval do
   def to_lazy
     LazyEnumerable.new(self)
+  end
+
+  #:call-seq:
+  #  enum.pipe(cmd)                      #=> self
+  #  enum.pipe(cmd) {|line| ..}          #=> self
+  #  enum.pipe(cmd, output)              #=> output
+  #  enum.pipe(cmd, output) {|line| ..}  #=> output
+  #
+  # Returns container with modified elements. Each element is piped through
+  # command +cmd+, i.e. elements are converted to lines (via method +lo_line)
+  # and go to standard input of the command +cmd+. Lines in standard output of 
+  # this command are converted to elements using String#to_record.
+  #
+  # Use form with associated block if you want to convert lines to records
+  # by youself.
+  #
+  # One can specify output container (or Proc object) as second argument.
+  def pipe(cmd, output=nil, &map_block)
+    output ||= []
+    IO.popen(@cmd, 'r+') do |pipe|
+      Thread.new {
+        @enum.each{|e| pipe.puts(e.to_line)}
+        pipe.close_write
+      }
+      if @map_block
+        pipe.each do |line|
+          output << @map_block[line]
+        end
+      else
+        pipe.each do |line|
+          output << line.to_record
+        end
+      end
+    end
+    output
   end
 end
 
@@ -190,3 +211,4 @@ if $0 == __FILE__
     end
   end
 end
+

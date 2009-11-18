@@ -1,7 +1,7 @@
 Method Enumerable#reduce provides functionality for 
 reducing streams of sorted records (google "MapReduce").
 
-Let's imaging container with records [key, count] containing 
+Let's imagine a container with records [key, count] containing 
 records with same key.  Reducing several records with same key 
 to one record can by done like this:
 
@@ -11,17 +11,17 @@ There is the way to do it:
 
   records.sort.reduce{|a,b| (a||=0) + b}
 
-Generaly speaking reducing is injecting values with same key.
-The reduce operation is equivalent to two injects:
+Generally speaking reducing is injecting values with same key.
+The reduce operation is equivalent to three injects:
  
   records.inject(Hash.new{|h,k| h[k]=[]}).inject{|map,r| map[r[0]] << r.value; map}.
     map{|records,pair| pair[0], pair[1].inject{|a,b| (a||=0) + b}}
 
 Reduce algorithm implementation is different from this inject-map-inject version.
-It's simple and based on the fact, that input records are already grouped by key. 
+It's simple and based on the fact that input records are already grouped by key. 
  
 Reduce can by combined with map, but before each reduce records should be sorted
-(or grouped by) by key.
+(or grouped) by key.
 
 If one has records [phrase, frequency] and wants to get
 records [word, frequency] he should run
@@ -33,14 +33,14 @@ records [word, frequency] he should run
    reduce{|a,b| (a||0) + b}
 
 
-One can make calculations lazy just converting container to lazy one:
+One can make calculations lazy just by converting container to lazy one:
    records.to_lazy. ...
    
-Lazy container allows dramatically redcue memory usage when using
-and create piped transfromations: map, select, uniq and reduce.
+Lazy container allows to dramatically reduce memory usage when using
+and create piped transfromations: map, select, uniq, pipe, and reduce.
   
 The only problem is method +sort+, which requires all records to be 
-loaded in memory. But one can use external sort:
+loaded to memory. But one can use external sort:
   
   cat records.txt | \ 
     ruby -r reduce -e 'STDIN.to_lazy.map(&:to_record).each{|p,f| p.split.each{|w| puts [w,f].to_line}}' | \ 
@@ -49,7 +49,7 @@ loaded in memory. But one can use external sort:
 
 Method String#to_record is <tt>spit("\t")</tt>.
 
-There are shortcuts: 
+Some shortcuts: 
 * <tt>records</tt> for <tt>STDIN.to_lazy.map(&:to_record)</tt>
 * <tt>r.put_record</tt> for <tt>puts r.to_line</tt>
 * <tt>enum.put_records</tt> for <tt>enum.each{|r| puts r.to_line}</tt>
@@ -65,7 +65,10 @@ and put +sort+ command line inside ruby code:
 
   cat records.txt | ruby -r reduce -e \ 
   'records.map_out{|o,r| r[0].split.each{|w| o << [w,r[1]]}}.|("sort"). \ 
-    reduce{|a,b| (a||0) + b.to_i}}).put_records'
+    reduce{|a,b| (a||0) + b.to_i}}.put_records'
+
+Methods Object#to_line and String#to_record are used for converting records to line
+and backwards around pipe command.
 
 Iterator +map_out+ sends to block output container as first argument.
 

@@ -1,0 +1,94 @@
+#!/usr/bin/ruby
+
+$:.unshift File.join(File.dirname(__FILE__), "..", "lib")
+
+require 'rubygems'
+require 'optparse'
+require 'reduce'
+require 'reducer'
+require 'lazy_enumerable'
+require 'utility_belt'
+ 
+options = {}
+
+option_parser = OptionParser.new do |opts|
+  opts.banner = "Usage: mr_shell [options]"
+  opts.on("-r", 
+    "--reduce REDUCER1[B1..E1]:MAPPER1,REDUCER2[B2..E2]:MAPPER2,...", 
+    "reducer description",
+    "Example: --reduce sum[2],prod[1] will give",
+    " lines: key A B, where A = sum of value[2] and B is product of value[1]"
+  ) do |v|
+    options[:reducer] = v
+  end
+  
+  opts.on("-e", 
+    '--code RUBYCODE', 
+    "reduce method; local variables are: rv (reduced value), v (value)",
+    "Examples: ",
+    "  --code '(v||=0) + r.value'",
+    "  --code '(v||=Hash.new(0))[r.value[2]] += 1'"
+  ) do |v|
+    name = Reducer.add_reduce_method(v)
+    options[:reducer] ||= name
+  end
+  
+  opts.on("-t", 
+    '--separator CHAR', 
+    "field separator; see --line_record option"
+  ) do |v|
+    LineRecord.field_separator = v
+  end
+ 
+  opts.on("-l", 
+    '--line_record LINETYPE', 
+    "LINETYPE can be one of ['simple', 'json', 'yaml']",
+    "Default is 'simple'; input lines are splited by field_separator"
+  ) do |v|
+    LineRecord.singleton_class.module_eval do
+      alias_method 'dump', "dump_#{v}"
+      alias_method 'load', "load_#{v}"
+    end
+  end
+ 
+  opts.on("-c", 
+    '--convert FIELDTYPES', 
+    "FILEDTYPES is comma-separated strings corresponding to to_X methods",
+    "Example:  's,i,f' will convert records like this",
+    "records.map!{|a,b,c| [a.to_s, b.to_i, c.to_f]}"
+  ) do |v|
+    options[:convert] = v
+  end
+
+  opts.on_tail("-n", "--no-key", "records without key") do
+    Array.class_eval do
+      def key
+        nil
+      end
+      def value
+        self.size == 1 ? self.first : self
+      end
+    end
+  end
+   
+  # No argument, shows at tail.  This will print an options summary.
+  # Try it and see!
+  opts.on_tail("-h", "--help", "Show this help message") do
+    puts opts
+    exit
+  end
+end
+
+option_parser.parse!
+
+pipe = records
+
+pipe = pipe.convert!(options[:convert]) if options[:convert]
+
+if options[:reducer]
+  reducer = Reducer.new(options[:reducer])
+  pipe = pipe.reduce(&reducer.reduce_block)
+end
+
+pipe.put_records
+

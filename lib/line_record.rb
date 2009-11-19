@@ -12,23 +12,58 @@ module LineRecord
     end
   
     def load_yaml(line)
-      line = (field_separartor + line)
-      line.gsub!(field_separartor, "- ")
-      YAML.load(line) rescue line.split(field_separartor)
+      if line.index("\t")
+        line.gsub!("\t", "\n  - ")
+        line.gsub!('\t', "\t")
+        YAML.load("---\n" << line)
+      else
+        line.gsub!(";", "\n")
+        line.gsub!('\t', "\t")
+        YAML.load("---\n" << line)
+      end
     end
     
     def dump_yaml(record)
-      a = record.flatten.to_yaml
-      a.gsub!(" -", field_separator)
+      if record.is_a?(Array)
+        a = record.flatten.to_yaml.strip!
+        a.gsub!(/^---\s*/, '')
+        a.gsub!("\t", '\t')
+        a.gsub!(/(\n|^)- /, "\t")
+        a.gsub!("\n", ";")
+      else
+        a.gsub!(/^---\s*/, '')
+        a = record.to_yaml.strip!
+        a.gsub!("\t", '\t')
+        a.gsub!("\n", ";")
+      end
       a
     end
-    
+
     def load_simple(line)
-      line.split(field_separator)
+      v = line.strip!.split(field_separator).map!{|f| 
+        case (f.strip!; f)
+        when /^[^\d+\-]/
+          f
+        when /\./
+          f.to_f
+        when /^\d+$/
+          f.to_i
+        else
+          f
+        end
+      }
     end
     
-    def dump_simple(line)
-      line.join(field_separator)
+    def dump_simple(record)
+      record.join(field_separator)
+    end
+     
+    def load_string(line)
+      line.strip!.split(field_separator)
+    end
+    
+    def dump_string(record)
+      record.join(field_separator)
     end
     
     alias load load_simple

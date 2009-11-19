@@ -14,11 +14,6 @@ def extract_options(args)
   end
 end
 
-class Proc
-  # This alias make it possible use blocks as virtual input streams or arrays. 
-  alias :<< :call
-end
-
 class Symbol
   unless public_method_defined? :to_proc
     def to_proc

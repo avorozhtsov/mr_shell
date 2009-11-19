@@ -35,10 +35,10 @@ records [word, frequency] he should run
 One can make calculations lazy just by converting container to lazy one:
    records.to_lazy. ...
    
-Lazy container allows to dramatically reduce memory usage when 
+LazyEnumerable allows to dramatically reduce memory usage when
 using piped transfromations: map, select, uniq, pipe, and reduce.
   
-The only problem is method +sort+, which requires all records to be 
+The only problem is the method +sort+, which requires all records to be
 loaded to memory. But one can use any scalable external sort:
   
   cat records.txt | \ 

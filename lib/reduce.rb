@@ -80,7 +80,7 @@ LazyEnumerable.class_eval do
 end
 
 def records
-  STDIN.to_lazy.map(&:to_record)
+  STDIN.to_lazy.select{|line| line =~ /\S/}.map(&:to_record)
 end
 
 #:stopdoc:

@@ -46,6 +46,18 @@ class LazyEnumerable
     end
     self
   end
+
+  # Converts records' fields using to_X methods.
+  # Example:
+  #   lazy_enum.convert!("s i f") 
+  # is equivalent to
+  #   lazy_enum.map!{|r| [r[0].to_s, r[1].to_i, r[2].to_f] }
+  def convert!(sig)
+    to_methods = sig.split(/[ ,:;]/)
+    i = -1
+    map_block = eval "lambda{|r| [#{to_methods.map{|s| "r[#{i+=1}].to_#{s}" }.join(",")}] }"
+    self.map!(&map_block)
+  end
   
   def map_out!(&map_block)
     @enum = self.clone
@@ -140,7 +152,8 @@ class LazyEnumerable
     self
   end
   
-  make_nobang :map, :map_out, :select, :flatten, :sort, :pipe
+  make_nobang :map, :convert, :map_out, :select, :flatten, :sort, :pipe
+
 end
 
 Enumerable.module_eval do

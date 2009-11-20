@@ -17,9 +17,24 @@ class Proc
     alias each_without_recursion each
     alias each each_with_recursion
   end
+
+  attr_accessor :times_blocks
+  protected :times_blocks, :times_blocks=
+
+  def times(other)
+    block = Proc.new do |mv|
+      i = -1
+      mv.map{|v|
+        block.times_blocks[i+=1][v]
+      }
+    end
+    block.times_blocks = (self.times_blocks || [self]) + (other.times_blocks || [other])
+    block
+  end
+  alias & times
  
   attr_accessor :together_blocks
-  # protected :together_blocks, :together_blocks=
+  protected :together_blocks, :together_blocks=
 
   def together(other)
     block = Proc.new do |reduced_value, e|

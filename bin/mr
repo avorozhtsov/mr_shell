@@ -14,7 +14,7 @@ options = {}
 option_parser = OptionParser.new do |opts|
   opts.banner = "Usage: mr_shell [options]"
   opts.on("-r", 
-    "--reduce REDUCER1[B1..E1]:MAPPER1,REDUCER2[B2..E2]:MAPPER2,...", 
+    "--reduce REDUCER1[B1..E1];REDUCER2[B2..E2];...",
     "reducer description",
     "Example: --reduce sum[2],prod[1] will give",
     " lines: key A B, where A = sum of value[2] and B is product of value[1]"
@@ -26,8 +26,8 @@ option_parser = OptionParser.new do |opts|
     '--code RUBYCODE', 
     "reduce method; local variables are: rv (reduced value), v (value)",
     "Examples: ",
-    "  --code '(v||=0) + r.value'",
-    "  --code '(v||=Hash.new(0))[r.value[2]] += 1'"
+    "  --code '(rv||=0) + v'",
+    "  --code '(rv||=Hash.new(0))[v[2]] += 1'"
   ) do |v|
     name = Reducer.add_reduce_method(v)
     options[:reducer] ||= name
@@ -87,7 +87,8 @@ pipe = pipe.convert!(options[:convert]) if options[:convert]
 
 if options[:reducer]
   reducer = Reducer.new(options[:reducer])
-  pipe = pipe.reduce(&reducer.reduce_block)
+  reducer.input = pipe
+  pipe = reducer
 end
 
 pipe.put_records

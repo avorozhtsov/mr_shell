@@ -30,7 +30,15 @@ class LazyEnumerable
   end
   
   delegate :each, :to => '@enum'
-  
+ 
+  def input
+    (@enum && @enum.respond_to?(:input)) ? @enum.input : @enum
+  end
+
+  def input=(enum)
+    (@enum && @enum.respond_to?(:input=)) ? (@enum.input=enum) : (@enum = enum)
+  end
+ 
   include Enumerable
 
   def map!(&map_block)

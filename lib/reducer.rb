@@ -111,7 +111,8 @@ class Reducer < LazyEnumerable
 
   def self.add_reduce_method(code)
     @user_method ||= "u000"
-    user_method =  (code=~ /^(\w+:)/) ? $1 : @user_method.succ!
+    user_method =  (code=~ /^(\w+):/) ? $1 : @user_method.succ!
+    code.gsub!(/^(\w+):/, '')
     self.class_eval "
       def #{user_method}(rv,v)
         #{code}

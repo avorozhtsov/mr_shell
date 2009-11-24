@@ -61,9 +61,12 @@ class LazyEnumerable
   # is equivalent to
   #   lazy_enum.map!{|r| [r[0].to_s, r[1].to_i, r[2].to_f] }
   def convert!(sig)
-    to_methods = sig.split(/[ ,:;]/)
+    to_methods = sig.split(/[ ,:;]+/)
     i = -1
-    map_block = eval "lambda{|r| [#{to_methods.map{|s| "r[#{i+=1}].to_#{s}" }.join(",")}] }"
+    # map_block = eval "lambda{|r| [#{to_methods.map{|s| "r[#{i+=1}].to_#{s}" }.join(","] }"
+    map_block = lambda{|r| r.zip(to_methods).map{|v,m| 
+      v.send("to_#{m}") } 
+    }
     self.map!(&map_block)
   end
   
@@ -228,6 +231,13 @@ if $0 == __FILE__
       assert_equal(
         ('a'..'f').to_a,
         ["a b c", "d e", "f"].to_lazy.map_out{|o,p| p.split.each{|w| o << w}}.to_a
+      )
+    end
+
+    def test_convert
+      assert_equal(
+        [[1, 2.1], [3,4.5]], 
+        [["1", "2.1"], ["3","4.5"]].to_lazy.convert!("i f").to_a
       )
     end
   end

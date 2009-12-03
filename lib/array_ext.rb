@@ -12,4 +12,14 @@ class Array
     self
   end
   
+  def sort_by!(&block)
+    sort!{|a,b| block[a] <=> block[b]}  
+  end
+
+  def second
+    self[1]
+  end
+  def to_s
+    '[' + join(", ") + ']'
+  end
 end

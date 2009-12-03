@@ -77,6 +77,22 @@ LazyEnumerable.class_eval do
     end
     self
   end
+
+  def sort_values_by!(&sort_block)
+    @enum = self.reduce!{|rv,v| (rv||[]) << v}.clone
+    @sort_block = sort_block
+    self.singleton_class.class_eval do
+      def each(&output_block)
+        @enum.each do |k, values|
+          values.sort_by!(&@sort_block).each do |v|
+            output_block[ [k,*v] ]
+          end
+        end
+        self
+      end
+    end
+    self
+  end
 end
 
 def records
@@ -125,4 +141,5 @@ if $0 == __FILE__
     end
   end
 end
+
 

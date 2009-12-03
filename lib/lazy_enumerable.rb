@@ -138,7 +138,7 @@ class LazyEnumerable
     end
     self
   end
- 
+
   #:call-seq:
   #  lazy_enum.pipe!(cmd)              #=> self
   #  lazy_enum.pipe!(cmd) {|line| ..}  #=> self
@@ -163,7 +163,7 @@ class LazyEnumerable
     self
   end
   
-  make_nobang :map, :convert, :map_out, :select, :flatten, :sort, :pipe
+  make_nobang :map, :convert, :map_out, :select, :flatten, :sort, :sort_values_by, :pipe
 
 end
 

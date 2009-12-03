@@ -23,6 +23,19 @@ class Reducer < LazyEnumerable
     (rv && rv + v) || v
   end
 
+  def join(rv,v)
+    (rv||[]) << v
+  end
+
+  def uniq(rv,v)
+    (rv||Set.new) << v
+  end
+
+  def join_map(v)
+    "[#{v.to_a.flatten.compact.join(",")}]"
+  end
+  alias uniq_map join_map
+
   def min(rv,v)
     (rv && ((rv < v) ? rv : v)) || v
   end
@@ -43,8 +56,8 @@ class Reducer < LazyEnumerable
     (rv && rv += 1) || 1
   end
 
-  def avg_map(r)
-    r[1].to_f/r[0]
+  def avg_map(v)
+    v[1].to_f/v[0]
   end
 
   def freq(rv,v)
@@ -110,7 +123,7 @@ class Reducer < LazyEnumerable
   end
 
   def self.add_reduce_method(code)
-    @user_method ||= "u000"
+    @user_method ||= "u0"
     user_method =  (code=~ /^(\w+):/) ? $1 : @user_method.succ!
     code.gsub!(/^(\w+):/, '')
     self.class_eval "

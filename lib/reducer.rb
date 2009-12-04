@@ -4,18 +4,6 @@ require 'core_ext'
 require 'set'
 require 'lazy_enumerable'
 
-def cut(ary,*args)
-  result = args.inject([]){|result, range| 
-    case range  
-    when Range
-      result.push(*ary[range])
-    else
-      result.push(ary[range])
-    end
-  }
-  result.size == 1 ?  result.first : result
-end
-
 class Reducer < LazyEnumerable
   attr_accessor :reduce_block
   attr_accessor :map_block
@@ -83,7 +71,7 @@ class Reducer < LazyEnumerable
       sig.split(";").map{|s| create_reduce_block(s)}.inject(&:+)
     else
       sig,cut,inject = (sig =~ SIG_RGXP  and [$1,$2,$3])
-      do_cut = "v=cut(v, #{cut});" if cut
+      do_cut = "v = v.cut(#{cut});" if cut
       if inject
         if sig =~ OP_RGXP
           eval "Proc.new{|rv,v| #{do_cut} [v].flatten.inject(rv){|rv1,v1| (rv1 #{sig} v1)}}"

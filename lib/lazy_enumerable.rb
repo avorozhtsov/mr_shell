@@ -59,14 +59,11 @@ class LazyEnumerable
   # Example:
   #   lazy_enum.convert!("s i f") 
   # is equivalent to
-  #   lazy_enum.map!{|r| [r[0].to_s, r[1].to_i, r[2].to_f] }
+  #   lazy_enum.map!{|r| r[0] = r[0].to_s; r[1] = r[1].to_i; r[2] = r[2].to_f; r }
   def convert!(sig)
     to_methods = sig.split(/[ ,:;]+/)
     i = -1
-    # map_block = eval "lambda{|r| [#{to_methods.map{|s| "r[#{i+=1}].to_#{s}" }.join(","] }"
-    map_block = lambda{|r| r.zip(to_methods).map{|v,m| 
-      v.send("to_#{m}") } 
-    }
+    map_block = eval "lambda{|r| #{to_methods.map{|s| "r[#{i+=1}] = r[#{i}].to_#{s};"}.join}; r}"
     self.map!(&map_block)
   end
   

@@ -109,13 +109,16 @@ end
 
 option_parser.parse!
 
-pipe = records
-
-pipe = pipe.convert!(options[:convert]) if options[:convert]
+pipe = if options[:convert]
+  fs = LineRecord.input_field_separator
+  STDIN.to_lazy.map{|line| line.split(fs)}.convert!(options[:convert]) 
+else
+  records
+end
 
 if options[:key]
   pipe = pipe.instance_eval <<-END_CODE
-    map!{|r| [r[0], cut(#{options[:key].join(',')}),r]}.
+    map!{|r| [r[0], r.cut(#{options[:key].join(',')}),r]}.
     sort_values_by!{|v| v[0]}.
     map!{|r_ext| r = r_ext[2]; r[0] = r_ext[1]; r}
   END_CODE

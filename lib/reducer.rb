@@ -32,8 +32,8 @@ class Reducer < LazyEnumerable
     (rv && ((rv > v) ? rv : v)) || v
   end
 
-  def mul(rv,v)
-    (rv && rv * v) || rv
+  def prod(rv,v)
+    (rv && rv * v) || v
   end
 
   def avg(rv,v)
@@ -50,10 +50,6 @@ class Reducer < LazyEnumerable
 
   def freq(rv,v)
     (rv||Hash.new(0))[v] += 1
-  end
-
-  def set(rv, v)
-    (rv && rv << v) || Set[v]
   end
 
   def initialize(sig)

@@ -38,16 +38,32 @@ class Reducer < LazyEnumerable
   def avg(rv,v)
     (rv && rv.vsum!([1,v])) || [1,v]
   end
+
+  def avg_map(v)
+    v[1].to_f/v[0]
+  end
+
+  def sigma(rv,v)
+    p ['sigma', rv,v]
+    (rv && rv.vsum!([1,v,v*v])) || [1,v,v*v]
+  end
+
+  def sigma_map(v)
+    Math.sqrt( (v[2] - v[1]*v[1].to_f/v[0]) / v[0] ) 
+  end
+
+  alias rsigma sigma
+  
+  def rsigma_map(v)
+    avg = v[1].to_f/v[0]
+    avg == 0 ? -1 : Math.sqrt( v[2].to_f/v[0] - avg*avg ) / avg
+  end
   
   def count(rv, v)
     (rv && rv += 1) || 1
   end
 
-  def avg_map(r)
-    r[1].to_f/r[0]
-  end
-
-  def freq(rv,v)
+   def freq(rv,v)
     (rv||Hash.new(0))[v] += 1
   end
 
@@ -59,7 +75,7 @@ class Reducer < LazyEnumerable
     @reduce_block = create_reduce_block(sig) 
     @map_value_block = create_map_block(sig)
     self.reduce!(&@reduce_block) if @reduce_block
-    self.map!{|r| [r.key, @map_value_block[r.value]] } if @map_value_block
+    self.map!{|r| @map_value_block[r] } if @map_value_block
   end
 
   OP_RGXP = %r{^[+*]$}
@@ -93,7 +109,7 @@ class Reducer < LazyEnumerable
     if sig.index(";")
       blocks = sig.split(";").map{|s| create_map_block(s) || ID_BLOCK}
       return nil if blocks.all?{|b| b == ID_BLOCK}
-      blocks.inject(&:&)
+      ([ID_BLOCK] + blocks).inject(&:&)
     else
       sig,cut,inject,map = (sig =~ SIG_RGXP and [$1,$2,$3,$4])
       return nil unless map || respond_to?("#{sig}_map")

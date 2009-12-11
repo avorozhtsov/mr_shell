@@ -8,12 +8,12 @@ require 'reduce'
 require 'reducer'
 require 'lazy_enumerable'
 require 'utility_belt'
- 
+
 options = {}
 
 option_parser = OptionParser.new do |opts|
   opts.banner = "Usage: mr_shell [options]"
-  opts.on("-r", 
+  opts.on("-r",
     "--reduce REDUCER1[B1..E1];REDUCER2[B2..E2];...",
     "reducer description",
     "Example: --reduce sum[2],prod[1] will give",
@@ -21,27 +21,54 @@ option_parser = OptionParser.new do |opts|
   ) do |v|
     options[:reducer] = v
   end
-  
-  opts.on("-e", 
-    '--code RUBYCODE', 
-    "reduce method; local variables are: rv (reduced value), v (value)",
-    "Examples: ",
-    "  --code '(rv||=0) + v'",
-    "  --code '(rv||=Hash.new(0))[v[2]] += 1'"
+
+  opts.on("-u",
+    '--function USER_FUNCTION',
+    "reduce method; local variables are: rv (reduced value), v (value),",
+    "r (record). Examples: ",
+    "  -u '(rv && rv + v) || v'",
+    "  -u 'u1:(rv||=Hash.new(0))[v[2]] += 1'"
   ) do |v|
     name = Reducer.add_reduce_method(v)
     options[:reducer] ||= name
   end
-  
-  opts.on("-t", 
-    '--separator CHAR', 
-    "field separator; see --line_record option"
+
+  opts.on("-e",
+    '--code CODE',
+    'Run STDIN.to_lazy.map!(&:to_record).#{CODE}.each(&:put_record)',
+    "Examples: ",
+    "  -e 'reduce!{|rv,v| (rv||=Set[]) << v }.map!{|r| r[1] = r[1].size}'"
   ) do |v|
-    LineRecord.field_separator = v
+    (options[:code] ||= []) << v
   end
- 
-  opts.on("-l", 
-    '--line_record LINETYPE', 
+
+  opts.on("-k",
+    '--key RANGE',
+    "Examples: ",
+    "  -k 1,2   -k 1..3   -k 1,3..5"
+  ) do |v|
+    (options[:key] ||= []) << v
+  end
+
+  opts.on("-t",
+    '--field_separator STRING_OR_REGEXP',
+    "Input field separator; see --line_record option",
+    "Regexp should be enclosed with '/'.  Exampes:",
+    " -t /\s+/, -t '\t'"
+  ) do |v|
+    v = Regexp.new(v.gsub(%r{^/|/$}, '')) if (v =~ %r{^/} && v =~ %r{/$}) || v.index('\\')
+    LineRecord.input_field_separator = v
+  end
+
+  opts.on("-T",
+    '--output_field_separator STRING',
+    "output field separator; see --line_record option"
+  ) do |v|
+    LineRecord.output_field_separator = v
+  end
+
+  opts.on("-l",
+    '--line_record LINE_TYPE',
     "LINETYPE can be one of ['simple', 'json', 'yaml']",
     "Default is 'simple'; input lines are splited by field_separator"
   ) do |v|
@@ -50,9 +77,9 @@ option_parser = OptionParser.new do |opts|
       alias_method 'load', "load_#{v}"
     end
   end
- 
-  opts.on("-c", 
-    '--convert FIELDTYPES', 
+
+  opts.on("-c",
+    '--convert FIELDTYPES',
     "FILEDTYPES is comma-separated strings corresponding to to_X methods",
     "Example:  's,i,f' will convert records like this",
     "records.map!{|a,b,c| [a.to_s, b.to_i, c.to_f]}"
@@ -61,6 +88,7 @@ option_parser = OptionParser.new do |opts|
   end
 
   opts.on_tail("-n", "--no-key", "records without key") do
+    options[:no_key] = true
     Array.class_eval do
       def key
         nil
@@ -70,7 +98,7 @@ option_parser = OptionParser.new do |opts|
       end
     end
   end
-   
+
   # No argument, shows at tail.  This will print an options summary.
   # Try it and see!
   opts.on_tail("-h", "--help", "Show this help message") do
@@ -81,15 +109,34 @@ end
 
 option_parser.parse!
 
-pipe = records
+pipe = if options[:convert]
+  fs = LineRecord.input_field_separator
+  STDIN.to_lazy.map{|line| line.split(fs)}.convert!(options[:convert]) 
+else
+  records
+end
 
-pipe = pipe.convert!(options[:convert]) if options[:convert]
+if options[:key]
+  pipe = pipe.instance_eval <<-END_CODE
+    map!{|r| [r[0], r.cut(#{options[:key].join(',')}),r]}.
+    sort_values_by!{|v| v[0]}.
+    map!{|r_ext| r = r_ext[2]; r[0] = r_ext[1]; r}
+  END_CODE
+end
 
 if options[:reducer]
   reducer = Reducer.new(options[:reducer])
   reducer.input = pipe
   pipe = reducer
 end
+
+if options[:code]
+  options[:code].each do |c|
+    pipe = pipe.instance_eval c
+  end
+end
+
+pipe = pipe.map!{|r| r[1..-1]} if options[:no_key] 
 
 pipe.put_records
 

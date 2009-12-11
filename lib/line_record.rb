@@ -5,12 +5,19 @@ require 'core_ext'
 module LineRecord
 
   class <<self
-    attr_accessor :field_separator
+    attr_accessor :input_field_separator, :output_field_separator
   
-    def field_separator
-      @field_separator ||= "\t"
+    def input_field_separator
+      @input_field_separator ||= "\t"
     end
-  
+
+    def output_field_separator
+      @output_field_separator ||= (
+        (input_field_separator.is_a?(String) && input_field_separator) ||
+        "\t"
+      )
+    end
+   
     def load_yaml(line)
       if line.index("\t")
         line.gsub!("\t", "\n  - ")
@@ -40,11 +47,16 @@ module LineRecord
     end
 
     def load_simple(line)
-      v = line.strip!.split(field_separator).map!{|f| 
+      v = line.strip!.split(input_field_separator).map!{|f| 
         case (f.strip!; f)
-        when /^[^\d+\-]/
-          f
-        when /\./
+        when /^[^\d.+\-]/
+          case f
+          when /^\[.+\]$|^\{.+\}$/
+            YAML.load(f)
+          else
+            f
+          end
+        when /^\d*\.\d+|\d+\.\d*^/
           f.to_f
         when /^\d+$/
           f.to_i
@@ -55,15 +67,15 @@ module LineRecord
     end
     
     def dump_simple(record)
-      record.join(field_separator)
+      record.join(output_field_separator)
     end
      
     def load_string(line)
-      line.strip!.split(field_separator)
+      line.strip!.split(input_field_separator)
     end
     
     def dump_string(record)
-      record.join(field_separator)
+      record.join(output_field_separator)
     end
     
     alias load load_simple

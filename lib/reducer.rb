@@ -4,24 +4,25 @@ require 'core_ext'
 require 'set'
 require 'lazy_enumerable'
 
-def cut(ary,*args)
-  result = args.inject([]){|result, range| 
-    case range  
-    when Range
-      result.push(*ary[range])
-    else
-      result.push(ary[range])
-    end
-  }
-  result.size == 1 ?  result.first : result
-end
-
 class Reducer < LazyEnumerable
   attr_accessor :reduce_block
   attr_accessor :map_block
   def sum(rv,v)
     (rv && rv + v) || v
   end
+
+  def join(rv,v)
+    (rv||[]) << v
+  end
+
+  def uniq(rv,v)
+    (rv||Set.new) << v
+  end
+
+  def join_map(v)
+    "[#{v.to_a.flatten.compact.join(",")}]"
+  end
+  alias uniq_map join_map
 
   def min(rv,v)
     (rv && ((rv < v) ? rv : v)) || v
@@ -31,8 +32,8 @@ class Reducer < LazyEnumerable
     (rv && ((rv > v) ? rv : v)) || v
   end
 
-  def mul(rv,v)
-    (rv && rv * v) || rv
+  def prod(rv,v)
+    (rv && rv * v) || v
   end
 
   def avg(rv,v)
@@ -63,12 +64,12 @@ class Reducer < LazyEnumerable
     (rv && rv += 1) || 1
   end
 
-   def freq(rv,v)
-    (rv||Hash.new(0))[v] += 1
+  def avg_map(v)
+    v[1].to_f/v[0]
   end
 
-  def set(rv, v)
-    (rv && rv << v) || Set[v]
+  def freq(rv,v)
+    (rv||Hash.new(0))[v] += 1
   end
 
   def initialize(sig)
@@ -86,7 +87,7 @@ class Reducer < LazyEnumerable
       sig.split(";").map{|s| create_reduce_block(s)}.inject(&:+)
     else
       sig,cut,inject = (sig =~ SIG_RGXP  and [$1,$2,$3])
-      do_cut = "v=cut(v, #{cut});" if cut
+      do_cut = "v = v.cut(#{cut});" if cut
       if inject
         if sig =~ OP_RGXP
           eval "Proc.new{|rv,v| #{do_cut} [v].flatten.inject(rv){|rv1,v1| (rv1 #{sig} v1)}}"
@@ -126,7 +127,7 @@ class Reducer < LazyEnumerable
   end
 
   def self.add_reduce_method(code)
-    @user_method ||= "u000"
+    @user_method ||= "u0"
     user_method =  (code=~ /^(\w+):/) ? $1 : @user_method.succ!
     code.gsub!(/^(\w+):/, '')
     self.class_eval "

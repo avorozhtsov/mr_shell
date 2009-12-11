@@ -89,14 +89,6 @@ option_parser = OptionParser.new do |opts|
 
   opts.on_tail("-n", "--no-key", "records without key") do
     options[:no_key] = true
-    Array.class_eval do
-      def key
-        nil
-      end
-      def value
-        self.size == 1 ? self.first : self
-      end
-    end
   end
 
   # No argument, shows at tail.  This will print an options summary.
@@ -122,6 +114,8 @@ if options[:key]
     sort_values_by!{|v| v[0]}.
     map!{|r_ext| r = r_ext[2]; r[0] = r_ext[1]; r}
   END_CODE
+elsif options[:no_key]
+  pipe = pipe.map!{|r| r.unshift(nil); r}
 end
 
 if options[:reducer]

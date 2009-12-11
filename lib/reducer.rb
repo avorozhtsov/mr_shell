@@ -4,13 +4,34 @@ require 'core_ext'
 require 'set'
 require 'lazy_enumerable'
 
+class Module
+  def make_vector_reduce(*methods)
+    options = extract_options(methods)
+    methods.each do |method|
+      class_eval do
+        define_method("v#{method}") do |rv,v|
+          (rv||Array.new(v.size){nil}).zip(v).map!{|rv,v| send(method,rv,v)}
+        end
+      end
+    end
+  end
+  def make_vector_map(*methods)
+    options = extract_options(methods)
+    methods.each do |method|
+      class_eval do
+        define_method("v#{method}") do |mv|
+          mv.map!{|v| send(method,v)}
+        end
+      end
+    end
+  end
+end
+
 class Reducer < LazyEnumerable
-  attr_accessor :reduce_block
-  attr_accessor :map_block
   def sum(rv,v)
     (rv && rv + v) || v
   end
-
+  
   def join(rv,v)
     (rv||[]) << v
   end
@@ -45,7 +66,6 @@ class Reducer < LazyEnumerable
   end
 
   def sigma(rv,v)
-    p ['sigma', rv,v]
     (rv && rv.vsum!([1,v,v*v])) || [1,v,v*v]
   end
 
@@ -72,16 +92,32 @@ class Reducer < LazyEnumerable
     (rv||Hash.new(0))[v] += 1
   end
 
+  # Create methods for multicolumn processing by same reducer
+  # Example:
+  #  def vsum(rv,v)
+  #   (rv||Array.new(v.size){nil}).zip(v).map!{|rv,v| sum(rv,v)}
+  #  end
+  #
+  #  is equivlent to
+  #  make_vector_reduce :sum
+  #
+  reducers = self.instance_methods - LazyEnumerable.instance_methods
+  make_vector_reduce *reducers.select{|m| m !~ /_map$/}
+  make_vector_map *reducers.select{|m| m =~ /_map$/}
+
+  attr_accessor :reduce_block
+  attr_accessor :map_block
+ 
   def initialize(sig)
     @reduce_block = create_reduce_block(sig) 
     @map_value_block = create_map_block(sig)
     self.reduce!(&@reduce_block) if @reduce_block
-    self.map!{|r| @map_value_block[r] } if @map_value_block
+    self.map!{|r| [r.key, @map_value_block[r.value]] } if @map_value_block
   end
 
   OP_RGXP = %r{^[+*]$}
   SIG_RGXP = %r{^([+*\w\d]+)(?:\[([\d,.]+)\])?(\*)?(?:/(.+))?$}
-  
+
   def create_reduce_block(sig)
     if sig.index(";")
       sig.split(";").map{|s| create_reduce_block(s)}.inject(&:+)
@@ -106,11 +142,12 @@ class Reducer < LazyEnumerable
   end
 
   ID_BLOCK = Proc.new{|x| x}
+ 
   def create_map_block(sig)
     if sig.index(";")
       blocks = sig.split(";").map{|s| create_map_block(s) || ID_BLOCK}
       return nil if blocks.all?{|b| b == ID_BLOCK}
-      ([ID_BLOCK] + blocks).inject(&:&)
+      blocks.inject(&:&)
     else
       sig,cut,inject,map = (sig =~ SIG_RGXP and [$1,$2,$3,$4])
       return nil unless map || respond_to?("#{sig}_map")

@@ -122,7 +122,7 @@ class Reducer < LazyEnumerable
     if sig.index(";")
       sig.split(";").map{|s| create_reduce_block(s)}.inject(&:+)
     else
-      sig,cut,inject = (sig =~ SIG_RGXP  and [$1,$2,$3])
+      sig,cut,inject = (sig =~ SIG_RGXP  and $~.captures)
       do_cut = "v = v.cut(#{cut});" if cut
       if inject
         if sig =~ OP_RGXP
@@ -149,7 +149,7 @@ class Reducer < LazyEnumerable
       return nil if blocks.all?{|b| b == ID_BLOCK}
       blocks.inject(&:&)
     else
-      sig,cut,inject,map = (sig =~ SIG_RGXP and [$1,$2,$3,$4])
+      sig,cut,inject,map = (sig =~ SIG_RGXP and $~.captures)
       return nil unless map || respond_to?("#{sig}_map")
       v = "v"
       if respond_to?("#{sig}_map")

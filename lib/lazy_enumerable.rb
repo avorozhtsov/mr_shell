@@ -97,11 +97,11 @@ class LazyEnumerable
   
   def uniq!
     @enum = self.clone
-    @done = {}
     self.singleton_class.class_eval do
       def each(&output_block)
+        done = {}
         @enum.each do |e| 
-          (output_block[e]; @done[e]=true) unless @done[e]
+          (output_block[e]; done[e]=true) unless done[e]
         end
         self
       end

@@ -1,0 +1,70 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  SuggestExtensions: false
+
+Layout/LineLength:
+  Max: 100
+
+Metrics/AbcSize:
+  Max: 40
+  Exclude:
+    - "lib/mr_shell/cli.rb"
+    - "lib/mr_shell/reducer_registry.rb"
+    - "test/**/*"
+
+Metrics/ClassLength:
+  Max: 250
+
+Metrics/MethodLength:
+  Max: 60
+  Exclude:
+    - "lib/mr_shell/reducer_registry.rb"
+    - "test/**/*"
+
+Metrics/BlockLength:
+  Max: 60
+  Exclude:
+    - "test/**/*"
+
+Metrics/CyclomaticComplexity:
+  Max: 12
+
+Metrics/PerceivedComplexity:
+  Max: 12
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Style/HashSyntax:
+  EnforcedShorthandSyntax: never
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/NilLambda:
+  Enabled: false
+
+# eval is a deliberate subject of this educational framework. It is isolated
+# to the evaluator and one comparison program, documented, and tested.
+Security/Eval:
+  Exclude:
+    - "examples/compare_eval.rb"
+    - "lib/mr_shell/evaluation_strategies.rb"
+    - "lib/mr_shell/ruby_evaluator.rb"
+
+# User expressions should report a virtual CLI filename, not this source file.
+Style/EvalWithLocation:
+  Exclude:
+    - "lib/mr_shell/ruby_evaluator.rb"
+
+# The generated lambda shape is documented directly above RubyEvaluator#compile.
+Style/DocumentDynamicEvalDefinition:
+  Exclude:
+    - "lib/mr_shell/ruby_evaluator.rb"
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
